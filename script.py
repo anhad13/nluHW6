@@ -309,7 +309,7 @@ def tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learnin
         finalRes[varying_param][param_value]=training_loop(model, loss, optimizer, training_iter, dev_iter, train_eval_iter)
     for r in param_range:
         if varying_param=="dropout_prob":
-            calc(input_size, embedding_dim, window_size, n_filters, num_labels,learning_rate, r, varying_param, r, finalRes)
+            calc(input_size, embedding_dim, window_size, n_filters, num_labels,learning_rate, r, r, varying_param, finalRes)
         elif varying_param=="embedding_dim":
             calc(input_size, r, window_size, n_filters, num_labels,learning_rate, dropout_prob, r, varying_param, finalRes)
         elif varying_param=="learning_rate":
@@ -320,14 +320,14 @@ def tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learnin
             calc(input_size, embedding_dim, window_size, r, num_labels, learning_rate,dropout_prob, r, varying_param, finalRes)
 
 finalcnn=collections.defaultdict(dict)
-print("Window size varying.")
-tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'window_size', range(1,20, 2), finalcnn)
-print("n_filters varying.")
-tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'n_filters', range(10,50, 10), finalcnn)
-print("embedding_dim varying.")
-tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'embedding_dim', range(50,400, 25), finalcnn)
-print("Learning rate varying.")
-tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'learning_rate', np.linspace(0.001, 0.1, num=10, endpoint=True), finalcnn)
+# print("Window size varying.")
+# tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'window_size', range(1,20, 2), finalcnn)
+# print("n_filters varying.")
+# tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'n_filters', range(10,50, 10), finalcnn)
+# print("embedding_dim varying.")
+# tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'embedding_dim', range(50,400, 25), finalcnn)
+# print("Learning rate varying.")
+# tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'learning_rate', np.linspace(0.001, 0.1, num=10, endpoint=True), finalcnn)
 print("Dropout prob varying.")
 tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'dropout_prob', np.linspace(0.1, 0.7, num=7, endpoint=True), finalcnn)
 
