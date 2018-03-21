@@ -240,17 +240,98 @@ def tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, varying_param,
             calc(hidden_dim, embedding_dim, r, dropout_prob, varying_param, r, finalRes)
         elif varying_param=="dropout_prob":
             calc(hidden_dim, embedding_dim, learning_rate, r, varying_param, r, finalRes)
-finalRes=collections.defaultdict(dict)
-print("Hidden Dim varying.")
-tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'hidden_dim', range(10,60, 5), finalRes)
-print("Embedding Dim varying.")
-tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'embedding_dim', range(50,400, 20), finalRes)
-print("Learning Rate varying.")
-tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'learning_rate',np.linspace(0.001, 0.1, num=10, endpoint=True)  , finalRes)
-print("Dropout Prob varying.")
-tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'dropout_prob', np.linspace(0.1, 0.9, num=9, endpoint=True) , finalRes)
+# finalRes=collections.defaultdict(dict)
+# print("Hidden Dim varying.")
+# tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'hidden_dim', range(10,60, 5), finalRes)
+# print("Embedding Dim varying.")
+# tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'embedding_dim', range(50,400, 20), finalRes)
+# print("Learning Rate varying.")
+# tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'learning_rate',np.linspace(0.001, 0.1, num=10, endpoint=True)  , finalRes)
+# print("Dropout Prob varying.")
+# tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'dropout_prob', np.linspace(0.1, 0.9, num=9, endpoint=True) , finalRes)
 
-CBOW_file="am8676_cbow"
-fo=open(CBOW_file, 'wb')
-pickle.dump(finalRes, fo)
+# CBOW_file="am8676_cbow"
+# fo=open(CBOW_file, 'wb')
+# pickle.dump(finalRes, fo)
+# fo.close()
+
+
+
+class TextCNN(nn.Module):
+    def __init__(self, input_size, embedding_dim, window_size, n_filters, num_labels, dropout_prob):
+        super(TextCNN, self).__init__()
+        
+        self.embed = nn.Embedding(input_size, embedding_dim, padding_idx=0)
+        self.dropout = nn.Dropout(p = dropout_prob)
+        self.dropout2 = nn.Dropout(p = dropout_prob)
+        self.conv1 = nn.Conv2d(1, n_filters, (window_size, embedding_dim)) 
+        self.fc1 = nn.Linear(n_filters, num_labels)
+        self.init_weights()
+        
+    def forward(self, x):
+        # Pass the input through your layers in order
+        out = self.embed(x)
+        out = self.dropout(out)
+        out = out.unsqueeze(1)
+        out = self.conv1(out).squeeze(3)
+        out = F.relu(out)
+        out = F.max_pool1d(out, out.size(2)).squeeze(2)
+        out = self.fc1(self.dropout2(out))
+        return out
+
+    def init_weights(self):
+        initrange = 0.1
+        lin_layers = [self.fc1]
+        em_layer = [self.embed]
+     
+        for layer in lin_layers+em_layer:
+            layer.weight.data.uniform_(-initrange, initrange)
+            if layer in lin_layers:
+                layer.bias.data.fill_(0)
+window_size = 2
+n_filters = 5
+embedding_dim = 100
+learning_rate = 0.1
+dropout_prob = 0.0
+
+def tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, varying_param, param_range, finalRes):
+    def calc(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, param_value, varying_param,  finalRes):
+        model = TextCNN(input_size, embedding_dim, window_size, n_filters, num_labels, dropout_prob)
+        model.cuda()
+        # Loss and Optimizer
+        loss = nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+        # Train the model
+        training_iter = data_iter(training_set, batch_size)
+        train_eval_iter = eval_iter(training_set[0:500], batch_size)
+        dev_iter = eval_iter(dev_set[0:500], batch_size)
+        finalRes[varying_param][param_value]=training_loop(model, loss, optimizer, training_iter, dev_iter, train_eval_iter)
+    for r in param_range:
+        if varying_param=="dropout_prob":
+            calc(input_size, embedding_dim, window_size, n_filters, num_labels,learning_rate, r, varying_param, r, finalRes)
+        elif varying_param=="embedding_dim":
+            calc(input_size, r, window_size, n_filters, num_labels,learning_rate, dropout_prob, r, varying_param, finalRes)
+        elif varying_param=="learning_rate":
+            calc(input_size, embedding_dim, window_size, n_filters, num_labels, r,dropout_prob, r, varying_param, finalRes)
+        elif varying_param=="window_size":
+            calc(input_size, embedding_dim, r, n_filters, num_labels,learning_rate, dropout_prob, r, varying_param, finalRes)
+        elif varying_param=="n_filters":
+            calc(input_size, embedding_dim, window_size, r, num_labels, learning_rate,dropout_prob, r, varying_param, finalRes)
+
+finalcnn=collections.defaultdict(dict)
+print("Window size varying.")
+tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'window_size', range(1,20, 2), finalcnn)
+print("n_filters varying.")
+tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'n_filters', range(10,50, 10), finalcnn)
+print("embedding_dim varying.")
+tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'embedding_dim', range(50,400, 25), finalcnn)
+print("Learning rate varying.")
+tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'learning_rate', np.linspace(0.001, 0.1, num=10, endpoint=True), finalcnn)
+print("Dropout prob varying.")
+tuner(input_size, embedding_dim, window_size, n_filters, num_labels, learning_rate, dropout_prob, 'dropout_prob', np.linspace(0.1, 0.7, num=7, endpoint=True), finalcnn)
+
+CNN_file="am8676_cnn"
+fo=open(CNN_file, 'wb')
+pickle.dump(finalcnn, fo)
 fo.close()
