@@ -143,8 +143,8 @@ def evaluate(model, data_iter):
     total = 0
     for i in range(len(data_iter)):
         vectors, labels = get_batch(data_iter[i])
-        vectors = Variable(torch.stack(vectors).squeeze())
-        labels = torch.stack(labels).squeeze()
+        vectors = Variable(torch.stack(vectors).squeeze().cuda())
+        labels = torch.stack(labels).squeeze().cuda()
         output = model(vectors)
         _, predicted = torch.max(output.data, 1)
         total += labels.size(0)
@@ -190,8 +190,8 @@ def training_loop(model, loss, optimizer, training_iter, dev_iter, train_eval_it
     for i in range(num_train_steps):
         model.train()
         vectors, labels = get_batch(next(training_iter))
-        vectors = Variable(torch.stack(vectors).squeeze())
-        labels = Variable(torch.stack(labels).squeeze())
+        vectors = Variable(torch.stack(vectors).squeeze().cuda())
+        labels = Variable(torch.stack(labels).squeeze().cuda())
 
         model.zero_grad()
         output = model(vectors)
@@ -223,7 +223,7 @@ def tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, varying_param,
         model = MLPClassifier(input_size, embedding_dim, hidden_dim, num_labels, dropout_prob)
         # Loss and Optimizer
         model.cuda()
-        loss = nn.CrossEntropyLoss()  
+        loss = nn.CrossEntropyLoss().cuda()  
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
         # Train the model
@@ -246,9 +246,9 @@ tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'hidden_dim', rang
 print("Embedding Dim varying.")
 tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'embedding_dim', range(50,400, 20), finalRes)
 print("Learning Rate varying.")
-tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'learning_rate', range(0.001,0.1, 0.003), finalRes)
+tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'learning_rate',np.linspace(0.001, 0.1, num=10, endpoint=True)  , finalRes)
 print("Dropout Prob varying.")
-tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'learning_rate', range(0.0,0.8, 0.1), finalRes)
+tuner(hidden_dim, embedding_dim, learning_rate, dropout_prob, 'dropout_prob', np.linspace(0.1, 0.9, num=9, endpoint=True) , finalRes)
 
 CBOW_file="am8676_cbow"
 fo=open(CBOW_file, 'wb')
